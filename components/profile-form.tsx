@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Download } from "lucide-react"
-import * as XLSX from "xlsx"
+import ExcelJS from "exceljs"
 
 interface ProfileData {
   lastName: string
@@ -60,44 +60,61 @@ export default function ProfileForm() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const downloadExcel = () => {
-    // Create worksheet data
-    const wsData = [
-      ["項目", "内容"],
-      ["姓", formData.lastName],
-      ["名", formData.firstName],
-      ["姓（カナ）", formData.lastNameKana],
-      ["名（カナ）", formData.firstNameKana],
-      ["性別", formData.gender],
-      ["生年月日", formData.birthDate],
-      ["メールアドレス", formData.email],
-      ["電話番号", formData.phone],
-      ["郵便番号", formData.postalCode],
-      ["都道府県", formData.prefecture],
-      ["市区町村", formData.city],
-      ["番地", formData.address],
-      ["建物名・部屋番号", formData.building],
-      ["職業", formData.occupation],
-      ["会社名", formData.company],
-      ["備考", formData.notes],
-    ]
-
-    // Create workbook and worksheet
-    const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.aoa_to_sheet(wsData)
-
-    // Set column widths
-    ws["!cols"] = [{ wch: 20 }, { wch: 40 }]
-
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(wb, ws, "プロフィール")
-
-    // Generate filename with current date
-    const date = new Date().toISOString().split("T")[0]
-    const filename = `profile_${date}.xlsx`
-
-    // Download file
-    XLSX.writeFile(wb, filename)
+  const downloadExcel = async () => {
+    try {
+      // 1. Load template file
+      const response = await fetch('/template.xlsx')
+      if (!response.ok) {
+        throw new Error('テンプレートファイルの読み込みに失敗しました')
+      }
+      const arrayBuffer = await response.arrayBuffer()
+      
+      // 2. Read template as workbook using ExcelJS
+      const workbook = new ExcelJS.Workbook()
+      await workbook.xlsx.load(arrayBuffer)
+      
+      // 3. Get worksheet
+      const worksheet = workbook.getWorksheet('プロフィール')
+      if (!worksheet) {
+        throw new Error('テンプレートのシートが見つかりません')
+      }
+      
+      // 4. Insert form data into cells (ExcelJS automatically preserves formatting)
+      worksheet.getCell('B3').value = formData.lastName
+      worksheet.getCell('B4').value = formData.firstName
+      worksheet.getCell('B5').value = formData.lastNameKana
+      worksheet.getCell('B6').value = formData.firstNameKana
+      worksheet.getCell('B7').value = formData.gender
+      worksheet.getCell('B8').value = formData.birthDate
+      worksheet.getCell('B9').value = formData.email
+      worksheet.getCell('B10').value = formData.phone
+      worksheet.getCell('B11').value = formData.postalCode
+      worksheet.getCell('B12').value = formData.prefecture
+      worksheet.getCell('B13').value = formData.city
+      worksheet.getCell('B14').value = formData.address
+      worksheet.getCell('B15').value = formData.building
+      worksheet.getCell('B16').value = formData.occupation
+      worksheet.getCell('B17').value = formData.company
+      worksheet.getCell('B18').value = formData.notes
+      
+      // 5. Generate Excel file as buffer
+      const buffer = await workbook.xlsx.writeBuffer()
+      
+      // 6. Create blob and download
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      const date = new Date().toISOString().split('T')[0]
+      link.download = `profile_${date}.xlsx`
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Excel生成エラー:', error)
+      alert('Excelファイルの生成に失敗しました。')
+    }
   }
 
   return (
