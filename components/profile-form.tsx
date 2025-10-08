@@ -73,34 +73,42 @@ export default function ProfileForm() {
       const workbook = new ExcelJS.Workbook()
       await workbook.xlsx.load(arrayBuffer)
       
-      // 3. Get worksheet
-      const worksheet = workbook.getWorksheet('プロフィール')
-      if (!worksheet) {
-        throw new Error('テンプレートのシートが見つかりません')
+      // 3. Get "個人" (Personal) worksheet
+      const personalSheet = workbook.getWorksheet('個人')
+      if (!personalSheet) {
+        throw new Error('「個人」シートが見つかりません')
       }
       
-      // 4. Insert form data into cells (ExcelJS automatically preserves formatting)
-      worksheet.getCell('B3').value = formData.lastName
-      worksheet.getCell('B4').value = formData.firstName
-      worksheet.getCell('B5').value = formData.lastNameKana
-      worksheet.getCell('B6').value = formData.firstNameKana
-      worksheet.getCell('B7').value = formData.gender
-      worksheet.getCell('B8').value = formData.birthDate
-      worksheet.getCell('B9').value = formData.email
-      worksheet.getCell('B10').value = formData.phone
-      worksheet.getCell('B11').value = formData.postalCode
-      worksheet.getCell('B12').value = formData.prefecture
-      worksheet.getCell('B13').value = formData.city
-      worksheet.getCell('B14').value = formData.address
-      worksheet.getCell('B15').value = formData.building
-      worksheet.getCell('B16').value = formData.occupation
-      worksheet.getCell('B17').value = formData.company
-      worksheet.getCell('B18').value = formData.notes
+      // 4. Insert personal data into "個人" sheet
+      personalSheet.getCell('B3').value = formData.lastName
+      personalSheet.getCell('B4').value = formData.firstName
+      personalSheet.getCell('B5').value = formData.lastNameKana
+      personalSheet.getCell('B6').value = formData.firstNameKana
+      personalSheet.getCell('B7').value = formData.gender
+      personalSheet.getCell('B8').value = formData.birthDate
+      personalSheet.getCell('B9').value = formData.email
+      personalSheet.getCell('B10').value = formData.phone
+      personalSheet.getCell('B11').value = formData.postalCode
+      personalSheet.getCell('B12').value = formData.prefecture
+      personalSheet.getCell('B13').value = formData.city
+      personalSheet.getCell('B14').value = formData.address
+      personalSheet.getCell('B15').value = formData.building
       
-      // 5. Generate Excel file as buffer
+      // 5. Get "会社" (Company) worksheet
+      const companySheet = workbook.getWorksheet('会社')
+      if (!companySheet) {
+        throw new Error('「会社」シートが見つかりません')
+      }
+      
+      // 6. Insert company data into "会社" sheet
+      companySheet.getCell('B3').value = formData.occupation
+      companySheet.getCell('B4').value = formData.company
+      companySheet.getCell('B5').value = formData.notes
+      
+      // 7. Generate Excel file as buffer
       const buffer = await workbook.xlsx.writeBuffer()
       
-      // 6. Create blob and download
+      // 8. Create blob and download
       const blob = new Blob([buffer], { 
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
       })
